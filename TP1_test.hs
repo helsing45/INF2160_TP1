@@ -8,6 +8,7 @@ import Control.Exception
 import Data.Typeable
 import Data.Time.Clock
 import Data.Time.Calendar
+import Data.Maybe
 
 --DÃ©claration de synonimes de types utiles
 type Annee = Integer
@@ -68,6 +69,24 @@ instance Exception Realisateur
 -- la fonction titre retourne le titre du film passÃ© en paramÃ¨tre
 titreFilm :: Film -> Titre
 titreFilm (Film titreF _ _ _ _ _ _ _ ) = titreF
+--cout du film
+coutDuFilm (Film _ _ _ _ coutF _ _ _) = coutF
+--realisateur du film
+realisateurFilm (Film _ _ realisateurF _ _ _ _ _ ) = realisateurF 
+--producteur du film
+producteurFilm (Film _ _ _ producteurF _ _ _ _) = producteurF
+--type du film 
+typeFilm (Film _ typeF _ _ _ _ _ _) = typeF
+-- duree du film
+dureeFilm (Film _ _ _ _ _ dureeF _ _ ) = dureeF
+-- Nombre d'acteurs
+nbActeursFilm (Film _ _ _ _ _ _ nbActeursF _ ) = nbActeursF
+-- budget
+budgetFilm (Film _ _ _ _ _ _ _ budgetF) = budgetF
+--budget du producteur
+budgetProducteur (MaisonDeProd _ budgetP _) = budgetP
+nomMaisonDeProd (MaisonDeProd nomP _ _ ) = nomP
+listeFilmsMaisonDeProd (MaisonDeProd _ _ listeFilmsP) = listeFilmsP
 -- la fonction experience retourne le nombre d'annÃ©es d'expÃ©rience de l'acteur donne en argument
 experience :: Acteur -> Integer
 experience (Acteur _ _ _ (Date' adebut _ _) _ _) = 2016 - adebut
@@ -106,6 +125,18 @@ instance Eq Film where
 -- *********************************** VOUS DEVEZ COMPLETEZ CETTE PARTIE *************************************--
 -- ***********************************************************************************************************--
 
+{-	1- la fonction selectionActeursCriteres retourne la liste formÃ©e des acteurs qui satisfont tous les critÃ¨res de la liste de critÃ¨res
+    EntrÃ©es: Liste de critÃ¨res, Liste d'acteurs (dans cette ordre)
+    Sortie: Liste d'acteurs	3pts-}
+selectionActeursCriteres :: [Acteur] -> [Critere] -> [Acteur]
+selectionActeursCriteres lstActeurs lstCriteres = [a | a <- lstActeurs, all (==True) ([c a | c <- lstCriteres])]
+
+{-  2- la fonction selectionActeursFilm retourne la liste formÃ©e des acteurs pour lesquels le film passÃ© en paramÃ¨tre satisfait leurs restrictions 
+    EntrÃ©es: un Film, une Liste d'acteurs (dans cette ordre)
+	Sortie: Liste d'acteurs    3pts	-}
+selectionActeursFilm :: Film -> [Acteur] -> [Acteur]	
+selectionActeursFilm film lacteurs = filter (\x -> restriction x film) lacteurs
+
 {-  3- la fonction prendrePremier prend un couple (n,l) et retourne les n premiers elements de la liste l.
     si l comporte moins de n Ã©lÃ©ments, on invoque l'exception PasAssezDelements. Elle pourrait vous Ãªtre utile Ã  plusieurs endroits.
     EntrÃ©es: : (n,l)
@@ -132,5 +163,27 @@ sommeSalaires lacteurs = sum (map revenuMin lacteurs)
    Sortie: Couple formÃ© d'une maison de production et d'un film
    10pts-}
 
-   --[mBudget m | m <- listeMaisons, mBudget m > 250000] -- get all maison de production avec buget plus grand que 250k
-						 
+produire (maison, film)
+-- Si le coût de film est supérieur strictement au budget de maison alors, l'exception BudgetInsuffisant est invoqué
+  | coutDuFilm film > budgetProducteur maison = throw BudgetInsuffisant
+-- Si la composante realisateur de film est PasDeRealisateur on invoque l'exception PasDeRealisateur
+  | realisateurFilm film == PasDeRealisateur = throw PasDeRealisateur
+-- Si la composante producteur de film est autre chose que PasDeProducteur on invoque l'exception DejaProduit.
+  | producteurFilm film /= PasDeProducteur = throw DejaProduit
+-- Si tout est beau on créer le couple avec la maison de production (maisonDeProduction), et le film
+  | otherwise = (maisonDeProduction, Film (titreFilm film) (typeFilm film) (realisateurFilm film) maisonDeProduction (coutDuFilm film) (dureeFilm film) (nbActeursFilm film) $ budgetFilm film) 
+    where maisonDeProduction = MaisonDeProd  (nomMaisonDeProd maison)  ((budgetProducteur maison) - (coutDuFilm film)) (listeFilmsMaisonDeProd maison ++ [film])						
+
+{-  6- la fonction acteursSelectionnes (film, lcriteres, lacteurs) retourne la liste des acteurs sÃ©lectionnÃ©s pour le film donnÃ© en paramÃ¨tre.
+        - tous les acteurs retournÃ©s doivent satisfaire Ã  tous les critÃ¨res de lcriteres
+        - le film satisfait toutes leurs restrictions 
+    Les validations suivantes doivent Ãªtre faites:
+        - Si le rÃ©alisateur de film est PasDeRealisateur on invoque l'exception PasDeRealisateur
+        - Si le producteur de film est PasDeProducteur on invoque l'exception PasDeProducteur
+        - S'il n'y a pas assez d'acteurs on invoque l'exception PasAssezDacteurs
+        - Si le total des salaires minimums demandes par ces acteurs est superieur au budget de film on invoque l'exception BudgetInsuffisant  
+	Remarque: n'oubliez pas qu'une fois un acteur sÃ©lectionnÃ©, ce film doit s'ajouter Ã  sa liste de films
+	EntrÃ©e: Triplet formÃ© d'un film, d'une liste de critÃ¨res et d'une liste d'acteurs 
+    Sortie: Liste d'acteurs
+    10pts	-}	
+   
