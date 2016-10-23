@@ -88,14 +88,20 @@ budgetProducteur (MaisonDeProd _ budgetP _) = budgetP
 nomMaisonDeProd (MaisonDeProd nomP _ _ ) = nomP
 listeFilmsMaisonDeProd (MaisonDeProd _ _ listeFilmsP) = listeFilmsP
 -- la fonction experience retourne le nombre d'annÃ©es d'expÃ©rience de l'acteur donne en argument
-experience :: Acteur -> Integer
-experience (Acteur _ _ _ (Date' adebut _ _) _ _) = 2016 - adebut
+
 -- la fonction revenuMin retourne le revenu minimum demande par l'acteur donnÃ© en argument
-revenuMin (Acteur _ _ revenuM _ _ _) = revenuM
--- la fonction nomActeur retourne le nom d'un acteur.
+
+----------------------------------------------------------------------------------------------------
+--------------------------------               ACTEUR          -------------------------------------
+----------------------------------------------------------------------------------------------------
 nomActeur (Acteur nom _ _ _ _ _) = nom
--- la fonction restriction retourne la composante restriction de l'argument de type acteur
+sexeActeur (Acteur _ s _ _ _ _) = s
+revenuMin (Acteur _ _ revenuM _ _ _) = revenuM
+experience :: Acteur -> Integer
+experience (Acteur _ _ _ (Date' adebut _ _) _ _) = 2016 - adebut --TODO peut-etre que l'on pourrai utiliser le getter dateActeur
+dateActeur (Acteur _ _ _ dateA _ _) = dateA
 restriction (Acteur _ _ _ _ r _) = r
+listFilmsActeur (Acteur _ _ _ _ _ listeFilms) = listeFilms
 -- la fonction nomRealisateur retourne le nom du realisateur.
 nomRealisateur (Realisateur nom _) = nom
 -- la fonction adresseRealisateur retourne l'adresse du realisateur.
@@ -186,4 +192,45 @@ produire (maison, film)
 	EntrÃ©e: Triplet formÃ© d'un film, d'une liste de critÃ¨res et d'une liste d'acteurs 
     Sortie: Liste d'acteurs
     10pts	-}	
-   
+acteursSelectionnes :: (Film, [Critere], [Acteur]) -> [Acteur]
+acteursSelectionnes (film, lcriteres, lacteurs) 
+-- Si le rÃ©alisateur de film est PasDeRealisateur on invoque l'exception PasDeRealisateur 
+  | realisateurFilm film == PasDeRealisateur = throw PasDeRealisateur
+-- Si le producteur de film est PasDeProducteur on invoque l'exception PasDeProducteur
+  | producteurFilm film == PasDeProducteur = throw PasDeProducteur
+-- S'il n'y a pas assez d'acteurs on invoque l'exception PasAssezDacteurs
+  | length lstActeursRetenu < nbActeursFilm film = throw PasAssezDacteurs
+-- Si le total des salaires minimums demandes par ces acteurs est superieur au budget de film on invoque l'exception BudgetInsuffisant  
+  | sommeSalaires lstActeursRetenu > budgetFilm film = throw BudgetInsuffisant
+  | otherwise = ajouterFilmActeurs(film,lstActeursRetenu)
+  where lstActeursRetenu = (selectionActeursCriteres (selectionActeursFilm  film lacteurs) lcriteres)
+	
+-- *************************************************************************************************************	
+-- *********************************** Fonctions d'aide pour cette question ************************************
+-- *************************************************************************************************************	
+-- cette fonction ajoute un film Ã  la liste des films des acteurs qui joueront dans ce film
+ajouterFilmActeurs :: (Film, [Acteur]) -> [Acteur]
+ajouterFilmActeurs (_, [])= []
+ajouterFilmActeurs (film, ((Acteur nomA sexeA revenuM dateA restrictionA listeFilms ):lacteurs)) = let acteur = (Acteur nomA sexeA revenuM dateA restrictionA (listeFilms++[film]) )
+                                                                                                  in [acteur]++ (ajouterFilmActeurs (film, lacteurs))
+-- *************************************************************************************************************
+-- ************************************** Fin des fonctions d'aide *********************************************
+-- *************************************************************************************************************
+
+
+
+
+
+{-  7- la fonction affectationDesRoles (film, lcriteres, lacteurs) retourne un couple dont
+       - la premiÃ¨re composante est formÃ©e d'un Film Ã©gal Ã  film sauf que son budget a Ã©tÃ© remplacÃ© par la somme des revenus minimums des acteurs choisis (voir deuxiÃ¨me
+	     composante) et son coÃ»t a Ã©tÃ© diminuÃ© de la diffÃ©rence entre le budget initial et le nouveau budget
+       - la seconde composante est formÃ©e de la liste des n premiers acteurs (ou n est le nombre d'acteurs dans le film) qui satisfont:
+         * Tous les critÃ¨res de lcriteres 
+         * et Pour lesquels film satisfait pour chacun, toutes les restrictions
+    De plus:
+       - Si le rÃ©alisateur de film est PasDeRealisateur on invoque l'exception PasDeRealisateur
+       - S'il n' y a pas assez d'acteurs on invoque l'exception PasAssezDacteurs
+       - Si le total des salaires minimums demandes par ces acteurs est supÃ©rieur au budget du film, on invoque l'exception BudgetInsuffisant.		
+	EntrÃ©es: Triplet formÃ© d'un film, d'une liste de critÃ¨res et d'une liste d'acteurs 
+    Sortie: Couple formÃ© d'un film et d'une liste d'acteurs
+	8pts-} 
